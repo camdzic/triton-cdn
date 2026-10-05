@@ -1,0 +1,28 @@
+{
+  "name": "triton-cdn",
+  "description": "Self-hosted encrypted CDN on Cloudflare Workers, R2 and D1, managed entirely from a terminal CLI.",
+  "version": "0.1.0",
+  "private": true,
+  "author": {
+    "name": "Aldin Čamdžić",
+    "email": "acamdzic0@proton.me"
+  },
+  "license": "CC BY-NC 4.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "cli": "bun run --cwd packages/cli start",
+    "cli:dev": "bun run --cwd packages/cli dev",
+    "build": "bun run --cwd packages/cli build",
+    "dev": "bun run --cwd packages/server dev",
+    "deploy": "bun run --cwd packages/server deploy",
+    "biome": "bunx biome check --write --unsafe",
+    "tsc": "tsc -b"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "lefthook": "^2.1.17",
+    "typescript": "~6.0.3"
+  }
+}

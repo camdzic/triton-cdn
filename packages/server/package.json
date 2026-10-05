@@ -1,0 +1,27 @@
+{
+  "name": "@triton/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "bun --env-file=../../.env scripts/deploy.ts",
+    "dev": "wrangler dev --port 8787 --env-file ../../.env.development --env-file .dev.vars",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate": "wrangler d1 migrations apply DB --remote",
+    "tsc": "tsc -p ."
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.9.1",
+    "@triton/shared": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.13.13",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261004.1",
+    "@types/bun": "1.4.2",
+    "drizzle-kit": "^0.31.11",
+    "wrangler": "^4.147.0"
+  }
+}
