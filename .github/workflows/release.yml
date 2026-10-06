@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   release-please:
@@ -19,7 +20,7 @@ jobs:
 
   publish:
     needs: release-please
-    if: needs.release-please.outputs.release_created
+    if: needs.release-please.outputs.release_created || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,7 +35,7 @@ jobs:
         with:
           node-version: lts/*
       - run: bun install --frozen-lockfile
-      - run: bun pm pack --filename triton.tgz
+      - run: bun pm pack --destination .
         env:
           TRITON_URL: ${{ vars.TRITON_URL }}
-      - run: npm publish triton.tgz
+      - run: npm publish *.tgz
