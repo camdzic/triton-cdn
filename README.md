@@ -77,7 +77,7 @@ Running `triton` with no arguments opens the interactive menu. Everything is als
 
 ## Environment
 
-Environment overrides: `TRITON_CONFIG_DIR`, `TRITON_IMAGE_PROTOCOL` (`kitty`, `iterm`, `sixel`, `none`).
+Environment overrides: `TRITON_CONFIG_DIR` (a relative path resolves against the repo root), `TRITON_IMAGE_PROTOCOL` (`kitty`, `iterm`, `sixel`, `none`).
 
 ## Local development
 
