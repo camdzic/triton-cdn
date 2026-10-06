@@ -1,11 +1,11 @@
-# @triton/cli
+# @aaldiin/triton
 
 Terminal client for [triton](https://github.com/camdzic/triton-cdn), a self-hosted encrypted CDN on Cloudflare Workers, R2 and D1.
 
 Requires [Bun](https://bun.sh).
 
 ```bash
-bun install -g @triton/cli
+bun install -g @aaldiin/triton
 triton
 ```
 

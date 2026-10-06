@@ -1,5 +1,5 @@
 {
-  "name": "@triton/cli",
+  "name": "@aaldiin/triton",
   "version": "0.1.0",
   "description": "Terminal client for triton, a self-hosted encrypted CDN on Cloudflare Workers.",
   "author": {

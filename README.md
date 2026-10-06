@@ -67,7 +67,7 @@ bun run deploy
 Install it from npm (requires Bun):
 
 ```bash
-bun install -g @triton/cli
+bun install -g @aaldiin/triton
 triton
 ```
 
