@@ -3,6 +3,15 @@
   "bootstrap-sha": "9333f1c5be248d00c13b8c25e3fe1ad9e5b285e0",
   "include-component-in-tag": false,
   "bump-minor-pre-major": true,
+  "pull-request-title-pattern": "release v${version}",
+  "pull-request-header": "merge to publish to npm",
+  "pull-request-footer": " ",
+  "changelog-sections": [
+    { "type": "feat", "section": "new" },
+    { "type": "fix", "section": "fixed" },
+    { "type": "perf", "section": "faster" },
+    { "type": "revert", "section": "reverted" }
+  ],
   "packages": {
     "packages/cli": {
       "release-type": "node"
