@@ -1,6 +1,6 @@
 {
   "name": "@aaldiin/triton",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Terminal client for triton, a self-hosted encrypted CDN on Cloudflare Workers.",
   "author": {
     "name": "Aldin Čamdžić",
