@@ -17,15 +17,15 @@
         "triton": "./dist/triton.js",
       },
       "dependencies": {
-        "@clack/prompts": "^1.8.1",
-        "@triton/shared": "workspace:*",
-        "citty": "^0.2.2",
-        "picocolors": "^1.1.1",
         "sharp": "^0.35.5",
-        "zod": "^4.6.5",
       },
       "devDependencies": {
+        "@clack/prompts": "^1.8.1",
+        "@triton/shared": "workspace:*",
         "@types/bun": "1.4.2",
+        "citty": "^0.2.2",
+        "picocolors": "^1.1.1",
+        "zod": "^4.6.5",
       },
     },
     "packages/server": {

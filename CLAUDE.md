@@ -21,6 +21,8 @@ All from the repo root unless noted. Bun workspace (isolated linker); there is n
 ## Configuration
 
 - `TRITON_URL` in the root `.env` is the single source of the instance URL: the CLI build bakes it in, the deploy derives the custom domain from it. `.env.development` points at `http://localhost:8787`. The server does not need it in production (file links use the request origin); locally it overrides the origin because `wrangler dev` rewrites request URLs.
+- In the CLI the baked `TRITON_URL` is only the default server: `triton server` stores an override as `server` in the config file, and switching servers drops the session. A relative `TRITON_CONFIG_DIR` resolves against the folder holding `.env.development` (the repo root).
+- `@triton/cli` is published to npm from `packages/cli` (`bun publish`, `prepublishOnly` rebuilds). Only `dist/` ships, so everything except the external `sharp` is a devDependency.
 - `packages/server/wrangler.jsonc` is per-instance and gitignored; `wrangler.example.jsonc` is the template. There is no `routes` entry: the domain comes only from `TRITON_URL` at deploy.
 - Secrets: `MASTER_KEY` (32 bytes base64) and `BOOTSTRAP_CODE` via `wrangler secret put`; locally in `.dev.vars`.
 

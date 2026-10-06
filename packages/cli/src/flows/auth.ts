@@ -29,7 +29,7 @@ export async function loginFlow() {
 
   freshScreen();
 
-  const server = serverUrl();
+  const server = serverUrl(config);
 
   log.info(`Signing in to ${dim(server)}`);
 
@@ -53,9 +53,11 @@ export async function loginFlow() {
 }
 
 export async function registerFlow() {
+  const config = await loadConfig();
+
   freshScreen();
 
-  const server = serverUrl();
+  const server = serverUrl(config);
 
   log.info(`Creating an account on ${dim(server)}`);
 

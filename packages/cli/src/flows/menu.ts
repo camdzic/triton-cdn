@@ -16,15 +16,17 @@ import { brand, dim, gradient, red } from '../lib/theme';
 import { loginFlow, logoutFlow, registerFlow } from './auth';
 import { browseFlow } from './files';
 import { invitesFlow } from './invites';
+import { serverFlow } from './server';
 import { sharexFlow } from './sharex';
 import { uploadFlow } from './upload';
 
-type GuestAction = 'login' | 'register' | 'quit';
+type GuestAction = 'login' | 'register' | 'server' | 'quit';
 type MemberAction =
   | 'upload'
   | 'browse'
   | 'sharex'
   | 'invites'
+  | 'server'
   | 'logout'
   | 'quit';
 
@@ -40,6 +42,7 @@ async function guestMenu() {
             label: 'Create an account',
             hint: 'needs an invite code'
           },
+          { value: 'server', label: 'Server', hint: 'view or change' },
           { value: 'quit', label: dim('Quit') }
         ]
       })
@@ -51,8 +54,19 @@ async function guestMenu() {
       return orBack(() => loginFlow());
     case 'register':
       return orBack(() => registerFlow());
+    case 'server':
+      await changeServer();
+      return null;
     default:
       return 'quit';
+  }
+}
+
+async function changeServer() {
+  const message = await orBack(() => serverFlow());
+
+  if (message !== null) {
+    carry(() => log.step(message));
   }
 }
 
@@ -76,6 +90,7 @@ async function memberMenu(session: Session, account: Account) {
           ...(account.user.role === 'admin'
             ? [{ value: 'invites' as const, label: 'Invites', hint: 'admin' }]
             : []),
+          { value: 'server', label: 'Server', hint: 'view or change' },
           { value: 'logout', label: 'Log out' },
           { value: 'quit', label: dim('Quit') }
         ]
@@ -96,6 +111,9 @@ async function memberMenu(session: Session, account: Account) {
     case 'invites':
       await orBack(() => invitesFlow(session));
       return session;
+    case 'server':
+      await changeServer();
+      return currentSession();
     case 'logout':
       await logoutFlow(session);
       return null;

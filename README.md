@@ -26,7 +26,7 @@ cp .env.example .env
 TRITON_URL=https://cdn.example.com
 ```
 
-The deploy attaches that domain to the Worker, and the CLI build bakes the same URL in, so a built CLI always talks to its own server. `.env` is gitignored.
+The deploy attaches that domain to the Worker, and the CLI build bakes the same URL in, so a built CLI talks to its own server by default. `.env` is gitignored.
 
 ## Deploy
 
@@ -64,6 +64,17 @@ bun run deploy
 
 ## CLI
 
+Install it from npm (requires Bun):
+
+```bash
+bun install -g @triton/cli
+triton
+```
+
+The published CLI talks to the default instance. `triton server <url>` points it at your own, `triton server` shows the current one and `triton server --reset` switches back. Switching servers logs you out.
+
+To build it from source instead:
+
 ```bash
 bun run build
 cd packages/cli
@@ -71,7 +82,9 @@ bun link
 triton
 ```
 
-`bun run build` bakes `TRITON_URL` into `packages/cli/dist/triton.js`. Rebuild after changing it.
+`bun run build` bakes `TRITON_URL` into `packages/cli/dist/triton.js` as the default server. Rebuild after changing it.
+
+Publishing: bump `version` in `packages/cli/package.json`, then run `bun publish` in `packages/cli`. `prepublishOnly` rebuilds the bundle from the root `.env` first, so `TRITON_URL` there becomes the default server for everyone who installs it.
 
 Running `triton` with no arguments opens the interactive menu. Everything is also available as commands:
 

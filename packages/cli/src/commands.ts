@@ -4,6 +4,7 @@ import packageJson from '../package.json';
 import { loginFlow, logoutFlow, registerFlow } from './flows/auth';
 import { browseFlow, deleteFile, showFile } from './flows/files';
 import { invitesFlow } from './flows/invites';
+import { serverFlow, switchServer } from './flows/server';
 import { sharexFlow } from './flows/sharex';
 import { uploadFiles } from './flows/upload';
 import {
@@ -15,6 +16,7 @@ import {
 } from './lib/format';
 import { closeFrame, openFrame, printBlock } from './lib/frame';
 import { Cancelled, errorMessage, reportError, task } from './lib/prompt';
+import { parseServerUrl } from './lib/server';
 import { currentSession, requireSession } from './lib/session';
 import { accent, brand, dim, link, red } from './lib/theme';
 
@@ -252,6 +254,38 @@ const invites = defineCommand({
     })
 });
 
+const server = defineCommand({
+  meta: { name: 'server', description: 'Show or change the server' },
+  args: {
+    url: {
+      type: 'positional',
+      description: 'Server URL to switch to',
+      required: false
+    },
+    reset: { type: 'boolean', description: 'Switch back to the default server' }
+  },
+  run: ({ args }) =>
+    framed(async () => {
+      if (args.reset) {
+        return switchServer(null);
+      }
+
+      if (args.url) {
+        const url = parseServerUrl(args.url);
+
+        if (!url) {
+          throw new Error('Enter an http:// or https:// URL');
+        }
+
+        return switchServer(url);
+      }
+
+      const message = await serverFlow();
+
+      return message === null ? DONE : message;
+    })
+});
+
 export const cli = defineCommand({
   meta: {
     name: 'triton',
@@ -270,6 +304,7 @@ export const cli = defineCommand({
     rm: remove,
     browse,
     sharex,
-    invites
+    invites,
+    server
   }
 });

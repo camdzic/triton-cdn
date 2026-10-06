@@ -1,15 +1,27 @@
 import { z } from 'zod';
+import type { Config } from './config';
 
-const serverUrlSchema = z.url({ protocol: /^https?$/ });
+export const serverUrlSchema = z.url({
+  protocol: /^https?$/,
+  error: 'Enter an http:// or https:// URL'
+});
 
-export function serverUrl() {
-  const result = serverUrlSchema.safeParse(process.env.TRITON_URL);
+export function parseServerUrl(value: string) {
+  const result = serverUrlSchema.safeParse(value.trim());
 
-  if (!result.success) {
-    throw new Error(
-      'This build of triton has no server. Set TRITON_URL in the root .env and rebuild the CLI.'
-    );
+  return result.success ? new URL(result.data).origin : null;
+}
+
+export function defaultServer() {
+  return parseServerUrl(process.env.TRITON_URL ?? '');
+}
+
+export function serverUrl(config: Config) {
+  const server = config.server ?? defaultServer();
+
+  if (!server) {
+    throw new Error('No server is set. Run triton server <url> to choose one.');
   }
 
-  return result.data.replace(/\/+$/, '');
+  return server;
 }

@@ -21,7 +21,7 @@ export async function currentSession() {
     return null;
   }
 
-  const server = serverUrl();
+  const server = serverUrl(config);
 
   return { api: new API(server, config.token), server, config };
 }
@@ -37,15 +37,24 @@ export async function requireSession() {
 }
 
 export async function persistSession(auth: AuthSession) {
-  const server = serverUrl();
+  const current = await loadConfig();
 
-  const config: Config = { token: auth.token, email: auth.user.email };
+  const config: Config = {
+    server: current.server,
+    token: auth.token,
+    email: auth.user.email
+  };
 
   await saveConfig(config);
+
+  const server = serverUrl(config);
 
   return { api: new API(server, auth.token), server, config };
 }
 
 export async function forgetSession(session: Session) {
-  await saveConfig({ email: session.config.email });
+  await saveConfig({
+    server: session.config.server,
+    email: session.config.email
+  });
 }

@@ -96,6 +96,19 @@ export class API {
     return this.request(okSchema, '/api/auth/logout', { method: 'POST' });
   }
 
+  async probe() {
+    const started = performance.now();
+
+    const response = await this.send('/api/me');
+
+    const body = await response.json().catch(() => null);
+
+    return {
+      triton: response.status === 401 && apiErrorSchema.safeParse(body).success,
+      ms: Math.round(performance.now() - started)
+    };
+  }
+
   account() {
     return this.request(accountSchema, '/api/me');
   }

@@ -3,8 +3,10 @@ import { chmod, mkdir, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { z } from 'zod';
+import { serverUrlSchema } from './server';
 
 const configSchema = z.object({
+  server: serverUrlSchema.optional(),
   token: z.string().optional(),
   email: z.string().optional()
 });
@@ -14,7 +16,7 @@ export type Config = z.infer<typeof configSchema>;
 function repoRoot() {
   let dir = import.meta.dir;
 
-  while (!existsSync(join(dir, 'bun.lock'))) {
+  while (!existsSync(join(dir, '.env.development'))) {
     const parent = dirname(dir);
 
     if (parent === dir) {

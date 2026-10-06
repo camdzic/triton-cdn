@@ -1,25 +1,50 @@
 {
   "name": "@triton/cli",
   "version": "0.1.0",
+  "description": "Terminal client for triton, a self-hosted encrypted CDN on Cloudflare Workers.",
+  "author": {
+    "name": "Aldin Čamdžić",
+    "email": "acamdzic0@proton.me"
+  },
+  "license": "CC-BY-NC-4.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/camdzic/triton-cdn.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "cdn",
+    "cli",
+    "encryption",
+    "sharex",
+    "cloudflare"
+  ],
   "type": "module",
   "bin": {
     "triton": "./dist/triton.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "start": "bun --env-file=../../.env src/index.ts",
     "dev": "bun --env-file=../../.env.development src/index.ts",
     "build": "bun --env-file=../../.env build src/index.ts --target bun --external sharp --env 'TRITON_*' --outfile dist/triton.js",
+    "prepublishOnly": "bun run build",
     "tsc": "tsc -p ."
   },
   "dependencies": {
-    "@clack/prompts": "^1.8.1",
-    "@triton/shared": "workspace:*",
-    "citty": "^0.2.2",
-    "picocolors": "^1.1.1",
-    "sharp": "^0.35.5",
-    "zod": "^4.6.5"
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@types/bun": "1.4.2"
+    "@clack/prompts": "^1.8.1",
+    "@triton/shared": "workspace:*",
+    "@types/bun": "1.4.2",
+    "citty": "^0.2.2",
+    "picocolors": "^1.1.1",
+    "zod": "^4.6.5"
   }
 }
