@@ -84,7 +84,7 @@ triton
 
 `bun run build` bakes `TRITON_URL` into `packages/cli/dist/triton.js` as the default server. Rebuild after changing it.
 
-Publishing: bump `version` in `packages/cli/package.json`, then run `bun publish` in `packages/cli`. `prepublishOnly` rebuilds the bundle from the root `.env` first, so `TRITON_URL` there becomes the default server for everyone who installs it.
+Releases are automated with release-please. Conventional commits that touch `packages/cli` (`fix:` bumps the patch, `feat:` the minor while below 1.0) keep a release PR up to date with the next version and changelog. Merging it tags `vX.Y.Z`, creates the GitHub release and publishes to npm through trusted publishing, with the `TRITON_URL` repository variable baked in as the default server.
 
 Running `triton` with no arguments opens the interactive menu. Everything is also available as commands:
 

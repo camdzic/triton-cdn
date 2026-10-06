@@ -33,7 +33,7 @@
     "start": "bun --env-file=../../.env src/index.ts",
     "dev": "bun --env-file=../../.env.development src/index.ts",
     "build": "bun --env-file=../../.env build src/index.ts --target bun --external sharp --env 'TRITON_*' --outfile dist/triton.js",
-    "prepublishOnly": "bun run build",
+    "prepack": "bun run build",
     "tsc": "tsc -p ."
   },
   "dependencies": {
