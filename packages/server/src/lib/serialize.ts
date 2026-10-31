@@ -9,14 +9,14 @@ function extensionOf(name: string) {
   return match ? match[0].toLowerCase() : '';
 }
 
-export function fileUrl(base: string, id: string, name: string) {
-  return `${base}/${id}${extensionOf(name)}`;
+export function fileUrl(base: string, slug: string, name: string) {
+  return `${base}/${slug}${extensionOf(name)}`;
 }
 
 export function toUser(row: UserRow) {
   return {
     id: row.id,
-    email: row.email,
+    username: row.username,
     role: row.role,
     createdAt: row.createdAt.toISOString()
   };
@@ -65,7 +65,9 @@ export function toFileEntry(row: FileRow, name: string, base: string) {
     name,
     contentType: row.contentType,
     size: row.size,
-    url: fileUrl(base, row.id, name),
+    url: fileUrl(base, row.vanity === null ? row.id : row.vanity, name),
+    vanity: row.vanity,
+    private: row.private,
     createdAt: row.createdAt.toISOString()
   };
 }

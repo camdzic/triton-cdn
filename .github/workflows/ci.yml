@@ -15,4 +15,25 @@ jobs:
       - run: bun run tsc
       - run: bunx biome ci
       - run: bun run build
+      - run: bun run build:web
       - run: bun packages/cli/dist/triton.js --version
+
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && vars.AUTO_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    concurrency: production
+    env:
+      TRITON_URL: ${{ vars.TRITON_URL }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: printf '%s' "$WRANGLER_CONFIG" > packages/server/wrangler.jsonc
+        env:
+          WRANGLER_CONFIG: ${{ secrets.WRANGLER_CONFIG }}
+      - run: bun run db:migrate
+        working-directory: packages/server
+      - run: bun run deploy

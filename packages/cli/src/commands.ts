@@ -2,7 +2,14 @@ import { log } from '@clack/prompts';
 import { defineCommand } from 'citty';
 import packageJson from '../package.json';
 import { loginFlow, logoutFlow, registerFlow } from './flows/auth';
-import { browseFlow, deleteFile, showFile } from './flows/files';
+import {
+  browseFlow,
+  deleteFile,
+  setAccess,
+  setVanity,
+  showFile,
+  vanityPrompt
+} from './flows/files';
 import { invitesFlow } from './flows/invites';
 import { serverFlow, switchServer } from './flows/server';
 import { sharexFlow } from './flows/sharex';
@@ -18,7 +25,7 @@ import { closeFrame, openFrame, printBlock } from './lib/frame';
 import { Cancelled, errorMessage, reportError, task } from './lib/prompt';
 import { parseServerUrl } from './lib/server';
 import { currentSession, requireSession } from './lib/session';
-import { accent, brand, dim, link, red } from './lib/theme';
+import { accent, brand, dim, link, red, yellow } from './lib/theme';
 
 const DONE = dim('done');
 
@@ -46,7 +53,7 @@ async function whenSignedOut(start: () => Promise<unknown>) {
 
   if (session) {
     log.warn(
-      `You are already logged in as ${brand(session.config.email ?? 'an account')}`
+      `You are already logged in as ${brand(session.config.username ?? 'an account')}`
     );
 
     return `Run ${accent('triton logout')} first to switch accounts`;
@@ -94,7 +101,7 @@ const whoami = defineCommand({
 
       log.message(
         fields([
-          ['Account', brand(account.user.email)],
+          ['Account', brand(account.user.username)],
           ['Role', account.user.role],
           ['Files', String(account.usage.files)],
           ['Storage', formatBytes(account.usage.bytes)],
@@ -112,13 +119,17 @@ const upload = defineCommand({
       type: 'positional',
       description: 'Files to upload',
       required: true
+    },
+    private: {
+      type: 'boolean',
+      description: 'Only you can open the uploaded files'
     }
   },
   run: ({ args }) =>
     framed(async () => {
       const { api } = await requireSession();
 
-      const results = await uploadFiles(api, args._);
+      const results = await uploadFiles(api, args._, Boolean(args.private));
 
       if (results.length < args._.length) {
         process.exitCode = 1;
@@ -165,7 +176,8 @@ const list = defineCommand({
           padEnd(truncate(file.name, nameWidth), nameWidth),
           formatBytes(file.size).padStart(8),
           dim(padEnd(formatRelative(file.createdAt), 14)),
-          link(file.url)
+          link(file.url),
+          file.private ? yellow('private') : ''
         ].join('  ')
       );
 
@@ -221,6 +233,60 @@ const remove = defineCommand({
       return (await deleteFile(api, file)) ? DONE : 'Kept the file';
     })
 });
+
+const vanity = defineCommand({
+  meta: { name: 'link', description: 'Set or remove a custom link for a file' },
+  args: {
+    id: { type: 'positional', description: 'File ID', required: true },
+    name: {
+      type: 'positional',
+      description: 'Custom link, without the extension',
+      required: false
+    },
+    remove: { type: 'boolean', description: 'Remove the custom link' }
+  },
+  run: ({ args }) =>
+    framed(async () => {
+      const { api } = await requireSession();
+
+      const file = await task('Loading file', () => api.file(args.id));
+
+      if (args.remove) {
+        await setVanity(api, file, null);
+
+        return DONE;
+      }
+
+      const name = args.name ? args.name : await vanityPrompt(file);
+
+      if (name === file.vanity) {
+        return 'Kept the link';
+      }
+
+      await setVanity(api, file, name);
+
+      return DONE;
+    })
+});
+
+function accessCommand(name: string, description: string, isPrivate: boolean) {
+  return defineCommand({
+    meta: { name, description },
+    args: {
+      id: { type: 'positional', description: 'File ID', required: true }
+    },
+    run: ({ args }) =>
+      framed(async () => {
+        const { api } = await requireSession();
+
+        const file = await task('Loading file', () => api.file(args.id));
+
+        await setAccess(api, file, isPrivate);
+
+        return DONE;
+      })
+  });
+}
 
 const browse = defineCommand({
   meta: { name: 'browse', description: 'Browse uploads interactively' },
@@ -302,6 +368,9 @@ export const cli = defineCommand({
     ls: list,
     view,
     rm: remove,
+    link: vanity,
+    private: accessCommand('private', 'Make a file visible only to you', true),
+    public: accessCommand('public', 'Make a file visible to anyone', false),
     browse,
     sharex,
     invites,

@@ -1,5 +1,6 @@
 import { log, password, text } from '@clack/prompts';
 import { loginInputSchema, registerInputSchema } from '@triton/shared';
+import type { z } from 'zod';
 import { API } from '../lib/api';
 import { loadConfig } from '../lib/config';
 import { ask, task, validator } from '../lib/prompt';
@@ -13,13 +14,13 @@ import {
 } from '../lib/session';
 import { brand, dim } from '../lib/theme';
 
-async function emailPrompt(initialValue?: string) {
+async function usernamePrompt(schema: z.ZodType, initialValue?: string) {
   return ask(
     await text({
-      message: 'Email',
-      placeholder: 'you@example.com',
+      message: 'Username',
+      placeholder: 'your-name',
       initialValue,
-      validate: validator(loginInputSchema.shape.email)
+      validate: validator(schema)
     })
   );
 }
@@ -33,7 +34,10 @@ export async function loginFlow() {
 
   log.info(`Signing in to ${dim(server)}`);
 
-  const email = await emailPrompt(config.email);
+  const username = await usernamePrompt(
+    loginInputSchema.shape.username,
+    config.username
+  );
 
   const secret = ask(
     await password({
@@ -45,8 +49,12 @@ export async function loginFlow() {
   const auth = await task(
     'Signing in',
     () =>
-      new API(server).login({ email, password: secret, device: deviceName() }),
-    (result) => `Signed in as ${brand(result.user.email)}`
+      new API(server).login({
+        username,
+        password: secret,
+        device: deviceName()
+      }),
+    (result) => `Signed in as ${brand(result.user.username)}`
   );
 
   return persistSession(auth);
@@ -61,7 +69,7 @@ export async function registerFlow() {
 
   log.info(`Creating an account on ${dim(server)}`);
 
-  const email = await emailPrompt();
+  const username = await usernamePrompt(registerInputSchema.shape.username);
 
   const secret = ask(
     await password({
@@ -88,9 +96,9 @@ export async function registerFlow() {
 
   const auth = await task(
     'Creating your account',
-    () => new API(server).register({ email, password: secret, invite }),
+    () => new API(server).register({ username, password: secret, invite }),
     (result) =>
-      `Welcome, ${brand(result.user.email)}${result.user.role === 'admin' ? dim(' · admin') : ''}`
+      `Welcome, ${brand(result.user.username)}${result.user.role === 'admin' ? dim(' · admin') : ''}`
   );
 
   return persistSession(auth);

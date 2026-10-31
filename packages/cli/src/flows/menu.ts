@@ -71,7 +71,7 @@ async function changeServer() {
 }
 
 function summary(account: Account) {
-  return `${brand(account.user.email)} ${dim(`· ${account.usage.files} files · ${formatBytes(account.usage.bytes)}`)}`;
+  return `${brand(account.user.username)} ${dim(`· ${account.usage.files} files · ${formatBytes(account.usage.bytes)}`)}`;
 }
 
 async function memberMenu(session: Session, account: Account) {

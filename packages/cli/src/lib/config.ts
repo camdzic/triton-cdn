@@ -8,7 +8,7 @@ import { serverUrlSchema } from './server';
 const configSchema = z.object({
   server: serverUrlSchema.optional(),
   token: z.string().optional(),
-  email: z.string().optional()
+  username: z.string().optional()
 });
 
 export type Config = z.infer<typeof configSchema>;

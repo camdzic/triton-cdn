@@ -4,7 +4,7 @@ import { tokens } from '../db/schema';
 import { sha256Hex } from './hash';
 import { randomId, randomSecret } from './random';
 
-const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+export const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 export type TokenKind = 'session' | 'upload';
 

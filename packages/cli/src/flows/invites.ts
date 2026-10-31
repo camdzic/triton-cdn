@@ -23,7 +23,7 @@ function when(iso: string) {
 }
 
 function usedLabel(invite: UsedInvite) {
-  return `${green('●')}  ${invite.account.email}  ${dim(`joined ${formatRelative(invite.usedAt)}`)}`;
+  return `${green('●')}  ${invite.account.username}  ${dim(`joined ${formatRelative(invite.usedAt)}`)}`;
 }
 
 function inviteLabel(invite: Invite) {
@@ -42,7 +42,7 @@ function usedDetails(invite: UsedInvite) {
 
   return fields([
     ['Status', green('Used')],
-    ['Account', account.email],
+    ['Account', account.username],
     ['Joined', when(invite.usedAt)],
     ['Files', String(account.files)],
     ['Storage', formatBytes(account.bytes)],
@@ -127,12 +127,12 @@ async function removeAccount(session: Session, invite: Invite) {
     return false;
   }
 
-  const { email, files, bytes } = invite.account;
+  const { username, files, bytes } = invite.account;
 
   const count = files === 1 ? '1 file' : `${files} files`;
   const sure = ask(
     await confirm({
-      message: `Revoke access for ${email}? This permanently deletes the account and its ${count} (${formatBytes(bytes)}).`,
+      message: `Revoke access for ${username}? This permanently deletes the account and its ${count} (${formatBytes(bytes)}).`,
       initialValue: false
     })
   );
@@ -142,9 +142,9 @@ async function removeAccount(session: Session, invite: Invite) {
   }
 
   await task(
-    `Removing ${email}`,
+    `Removing ${username}`,
     () => session.api.removeInviteAccount(invite.id),
-    () => `Access revoked for ${email}`
+    () => `Access revoked for ${username}`
   );
 
   return true;

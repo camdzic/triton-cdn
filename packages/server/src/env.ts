@@ -4,6 +4,7 @@ import type { UserRow } from './db/schema';
 export interface Bindings {
   DB: D1Database;
   BUCKET: R2Bucket;
+  ASSETS: Fetcher;
   AUTH_LIMITER: RateLimit;
   MASTER_KEY: string;
   BOOTSTRAP_CODE: string;

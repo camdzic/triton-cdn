@@ -20,7 +20,7 @@ async function isFile(target: string) {
   }
 }
 
-async function uploadOne(api: API, target: string) {
+async function uploadOne(api: API, target: string, isPrivate: boolean) {
   const name = basename(target);
 
   const size = Bun.file(target).size;
@@ -32,7 +32,7 @@ async function uploadOne(api: API, target: string) {
   bar.start(`Uploading ${name}`);
 
   try {
-    const result = await api.upload(target, (sent) => {
+    const result = await api.upload(target, isPrivate, (sent) => {
       bar.advance(
         sent - reported,
         `Uploading ${name} ${dim(`${formatBytes(sent)} / ${formatBytes(size)}`)}`
@@ -41,7 +41,7 @@ async function uploadOne(api: API, target: string) {
       reported = sent;
     });
 
-    const summary = `${name} ${dim(`· ${formatBytes(result.size)} · encrypted`)}`;
+    const summary = `${name} ${dim(`· ${formatBytes(result.size)} · encrypted${result.private ? ' · private' : ''}`)}`;
 
     bar.stop(summary);
 
@@ -55,7 +55,11 @@ async function uploadOne(api: API, target: string) {
   }
 }
 
-export async function uploadFiles(api: API, targets: readonly string[]) {
+export async function uploadFiles(
+  api: API,
+  targets: readonly string[],
+  isPrivate = false
+) {
   const results: FileEntry[] = [];
 
   for (const target of targets.map((value) => resolve(value))) {
@@ -68,7 +72,7 @@ export async function uploadFiles(api: API, targets: readonly string[]) {
     }
 
     try {
-      results.push(await uploadOne(api, target));
+      results.push(await uploadOne(api, target, isPrivate));
     } catch (error) {
       if (error instanceof APIError && error.status === 401) {
         throw error;

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { files } from '../db/schema';
@@ -7,12 +7,13 @@ import { contentDisposition, servedContentType } from '../lib/content-type';
 import { parseRange } from '../lib/range';
 import { objectKey, openFile } from '../lib/stored-files';
 import { sealedSlice } from '../lib/stream-cipher';
+import { viewerId } from '../middleware/auth';
 
-const FILE_ROUTE = '/:slug{[A-Za-z0-9]{1,32}(?:\\.[A-Za-z0-9]{1,16})?}';
+const FILE_ROUTE = '/:slug{[A-Za-z0-9_-]{1,64}(?:\\.[A-Za-z0-9]{1,16})?}';
 
 const FILE_HEADERS = {
   'Content-Security-Policy':
-    "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox",
+    "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox allow-same-origin",
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
   'Cross-Origin-Resource-Policy': 'cross-origin',
@@ -20,21 +21,30 @@ const FILE_HEADERS = {
   'Cache-Control': 'public, max-age=86400'
 };
 
+const PRIVATE_HEADERS = {
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Cache-Control': 'private, no-store'
+};
+
 function notFound() {
   return new HTTPException(404, { message: 'File not found' });
 }
 
 export const publicRoutes = new Hono<AppEnv>().get(FILE_ROUTE, async (c) => {
-  const [id = ''] = c.req.param('slug').split('.');
+  const [slug = ''] = c.req.param('slug').split('.');
 
   const row = await c
     .get('db')
     .select()
     .from(files)
-    .where(eq(files.id, id))
+    .where(or(eq(files.id, slug), eq(files.vanity, slug.toLowerCase())))
     .get();
 
   if (!row) {
+    throw notFound();
+  }
+
+  if (row.private && (await viewerId(c)) !== row.userId) {
     throw notFound();
   }
 
@@ -42,6 +52,7 @@ export const publicRoutes = new Hono<AppEnv>().get(FILE_ROUTE, async (c) => {
 
   const headers = new Headers({
     ...FILE_HEADERS,
+    ...(row.private ? PRIVATE_HEADERS : {}),
     ETag: etag,
     'Last-Modified': row.createdAt.toUTCString()
   });

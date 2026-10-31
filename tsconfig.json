@@ -12,6 +12,9 @@
     },
     {
       "path": "packages/server/scripts"
+    },
+    {
+      "path": "apps/web"
     }
   ]
 }

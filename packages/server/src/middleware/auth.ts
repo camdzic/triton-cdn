@@ -7,6 +7,12 @@ import type { AppEnv, AuthContext } from '../env';
 import { sha256Hex } from '../lib/hash';
 import { type TokenKind, tokenKindOf } from '../lib/sessions';
 import { verifyUploadToken } from '../lib/upload-token';
+import {
+  clearSessionCookie,
+  isWebClient,
+  sessionCookie,
+  webSessionToken
+} from '../lib/web-session';
 
 const TOUCH_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -77,27 +83,73 @@ async function authenticateUpload(
   return { kind: 'upload', user };
 }
 
+function requestToken(c: Context<AppEnv>) {
+  const bearer = bearerToken(c.req.header('authorization'));
+
+  if (bearer) {
+    return bearer;
+  }
+
+  const cookie = webSessionToken(c);
+
+  return cookie && tokenKindOf(cookie) === 'session' ? cookie : null;
+}
+
+function authenticate(c: Context<AppEnv>, allowed: TokenKind[]) {
+  const token = requestToken(c);
+  const kind = token ? tokenKindOf(token) : null;
+
+  if (!token || !kind) {
+    throw unauthorized();
+  }
+
+  if (!allowed.includes(kind)) {
+    throw new HTTPException(403, {
+      message: 'This token cannot be used here'
+    });
+  }
+
+  return kind === 'session'
+    ? authenticateSession(c, token)
+    : authenticateUpload(c, token);
+}
+
+export async function viewerId(c: Context<AppEnv>) {
+  const bearer = bearerToken(c.req.header('authorization'));
+  const token = bearer ? bearer : sessionCookie(c);
+
+  if (!token || tokenKindOf(token) !== 'session') {
+    return null;
+  }
+
+  try {
+    const auth = await authenticateSession(c, token);
+
+    return auth.user.id;
+  } catch (error) {
+    if (error instanceof HTTPException) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 export function requireAuth(...allowed: TokenKind[]) {
   return createMiddleware<AppEnv>(async (c, next) => {
-    const token = bearerToken(c.req.header('authorization'));
-    const kind = token ? tokenKindOf(token) : null;
+    try {
+      c.set('auth', await authenticate(c, allowed));
+    } catch (error) {
+      if (
+        error instanceof HTTPException &&
+        error.status === 401 &&
+        isWebClient(c)
+      ) {
+        clearSessionCookie(c);
+      }
 
-    if (!token || !kind) {
-      throw unauthorized();
+      throw error;
     }
-
-    if (!allowed.includes(kind)) {
-      throw new HTTPException(403, {
-        message: 'This token cannot be used here'
-      });
-    }
-
-    c.set(
-      'auth',
-      kind === 'session'
-        ? await authenticateSession(c, token)
-        : await authenticateUpload(c, token)
-    );
 
     await next();
   });

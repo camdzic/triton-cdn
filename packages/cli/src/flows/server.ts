@@ -40,7 +40,9 @@ async function describe(config: Config) {
 
   rows.push([
     'Account',
-    config.token && config.email ? brand(config.email) : dim('not logged in')
+    config.token && config.username
+      ? brand(config.username)
+      : dim('not logged in')
   ]);
 
   log.message(fields(rows));
@@ -90,7 +92,7 @@ export async function switchServer(next: string | null) {
   if (token && current) {
     const sure = ask(
       await confirm({
-        message: `Switching servers logs you out of ${config.email ?? 'your account'}. Continue?`,
+        message: `Switching servers logs you out of ${config.username ?? 'your account'}. Continue?`,
         initialValue: false
       })
     );

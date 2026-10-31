@@ -42,7 +42,7 @@ export async function persistSession(auth: AuthSession) {
   const config: Config = {
     server: current.server,
     token: auth.token,
-    email: auth.user.email
+    username: auth.user.username
   };
 
   await saveConfig(config);
@@ -55,6 +55,6 @@ export async function persistSession(auth: AuthSession) {
 export async function forgetSession(session: Session) {
   await saveConfig({
     server: session.config.server,
-    email: session.config.email
+    username: session.config.username
   });
 }

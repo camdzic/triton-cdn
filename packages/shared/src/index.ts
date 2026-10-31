@@ -2,16 +2,74 @@ import { z } from 'zod';
 
 export const SESSION_TOKEN_PREFIX = 'trs_';
 export const UPLOAD_TOKEN_PREFIX = 'tru_';
+export const SESSION_COOKIE = 'triton_session';
+export const SIGNED_IN_COOKIE = 'triton_signed_in';
+export const GUEST_PATHS = ['/login', '/register'] as const;
+export const MEMBER_PATHS = ['/', '/invites', '/sharex', '/account'] as const;
+export const WEB_CLIENT_HEADER = 'x-triton-client';
+export const WEB_CLIENT = 'web';
 
-const email = z
-  .email('Enter a valid email address')
-  .max(254)
-  .transform((value) => value.trim().toLowerCase());
+const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/;
+
+const username = z
+  .string({ error: 'Username is required' })
+  .trim()
+  .toLowerCase()
+  .min(3, 'Username must be at least 3 characters')
+  .max(32, 'Username must be at most 32 characters')
+  .regex(
+    USERNAME_PATTERN,
+    'Use letters, numbers, dots, dashes or underscores, starting and ending with a letter or number'
+  );
+
+const loginUsername = z
+  .string({ error: 'Username is required' })
+  .trim()
+  .toLowerCase()
+  .min(1, 'Username is required')
+  .max(254);
+
+const VANITY_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
+const VANITY_EXTENSION = /\.[a-z0-9]{1,16}$/;
+
+const RESERVED_VANITIES: ReadonlySet<string> = new Set([
+  ...[...GUEST_PATHS, ...MEMBER_PATHS].map((path) => path.slice(1)),
+  '404',
+  'admin',
+  'api',
+  'assets',
+  'dashboard',
+  'favicon',
+  'files',
+  'icon',
+  'index',
+  'logout',
+  'public',
+  'robots',
+  'settings',
+  'signin',
+  'signup',
+  'sitemap',
+  'static'
+]);
+
+export const vanitySchema = z
+  .string({ error: 'Link is required' })
+  .trim()
+  .toLowerCase()
+  .overwrite((value) => value.replace(VANITY_EXTENSION, ''))
+  .min(3, 'Link must be at least 3 characters')
+  .max(64, 'Link must be at most 64 characters')
+  .regex(
+    VANITY_PATTERN,
+    'Use letters, numbers, dashes or underscores, starting and ending with a letter or number'
+  )
+  .refine((value) => !RESERVED_VANITIES.has(value), 'This link is reserved');
 
 const timestamp = z.iso.datetime();
 
 export const registerInputSchema = z.object({
-  email,
+  username,
   password: z
     .string()
     .min(10, 'Password must be at least 10 characters')
@@ -20,7 +78,7 @@ export const registerInputSchema = z.object({
 });
 
 export const loginInputSchema = z.object({
-  email,
+  username: loginUsername,
   password: z.string().min(1, 'Password is required').max(256),
   device: z.string().trim().min(1).max(64).default('CLI')
 });
@@ -35,18 +93,33 @@ export const listFilesQuerySchema = z.object({
 });
 
 export const uploadQuerySchema = z.object({
-  filename: z.string().trim().min(1, 'Filename is required').max(255)
+  filename: z.string().trim().min(1, 'Filename is required').max(255),
+  private: z.stringbool().default(false)
 });
+
+export const updateFileInputSchema = z
+  .object({
+    vanity: vanitySchema.nullable().optional(),
+    private: z.boolean().optional()
+  })
+  .refine(
+    (input) => input.vanity !== undefined || input.private !== undefined,
+    'Nothing to update'
+  );
 
 export const userSchema = z.object({
   id: z.string(),
-  email: z.string(),
+  username: z.string(),
   role: z.enum(['admin', 'user']),
   createdAt: timestamp
 });
 
 export const sessionSchema = z.object({
   token: z.string(),
+  user: userSchema
+});
+
+export const webSessionSchema = z.object({
   user: userSchema
 });
 
@@ -64,6 +137,8 @@ export const fileEntrySchema = z.object({
   contentType: z.string(),
   size: z.number().int(),
   url: z.url(),
+  vanity: z.string().nullable(),
+  private: z.boolean(),
   createdAt: timestamp
 });
 
@@ -79,7 +154,7 @@ export const uploadTokenSchema = z.object({
 });
 
 export const inviteAccountSchema = z.object({
-  email: z.string(),
+  username: z.string(),
   files: z.number().int(),
   bytes: z.number().int()
 });
@@ -119,9 +194,11 @@ export const apiErrorSchema = z.object({ error: z.string() });
 export type RegisterInput = z.input<typeof registerInputSchema>;
 export type LoginInput = z.input<typeof loginInputSchema>;
 export type CreateInviteInput = z.input<typeof createInviteInputSchema>;
+export type UpdateFileInput = z.input<typeof updateFileInputSchema>;
 export type User = z.infer<typeof userSchema>;
 export type Role = User['role'];
 export type Session = z.infer<typeof sessionSchema>;
+export type WebSession = z.infer<typeof webSessionSchema>;
 export type Account = z.infer<typeof accountSchema>;
 export type FileEntry = z.infer<typeof fileEntrySchema>;
 export type FilePage = z.infer<typeof filePageSchema>;

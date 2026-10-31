@@ -3,9 +3,10 @@ import {
   type FilePage,
   listFilesQuerySchema,
   type Ok,
+  updateFileInputSchema,
   uploadQuerySchema
 } from '@triton/shared';
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, ne, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { aggregateRow } from '../db/aggregates';
@@ -41,7 +42,7 @@ export const fileRoutes = new Hono<AppEnv>()
     requireAuth('session', 'upload'),
     validate('query', uploadQuerySchema),
     async (c) => {
-      const { filename } = c.req.valid('query');
+      const { filename, private: isPrivate } = c.req.valid('query');
 
       const size = declaredSize(c.req.header('content-length'));
 
@@ -80,6 +81,7 @@ export const fileRoutes = new Hono<AppEnv>()
           ),
           size,
           wrappedKey: fileKey.wrapped,
+          private: isPrivate,
           createdAt: new Date()
         })
         .returning()
@@ -157,6 +159,57 @@ export const fileRoutes = new Hono<AppEnv>()
       toFileEntry(row, name, publicOrigin(c.env, c.req.url)) satisfies FileEntry
     );
   })
+  .patch(
+    '/:id',
+    requireAuth('session'),
+    validate('json', updateFileInputSchema),
+    async (c) => {
+      const { vanity, private: isPrivate } = c.req.valid('json');
+
+      const db = c.get('db');
+      const id = c.req.param('id');
+
+      if (vanity !== undefined && vanity !== null) {
+        const taken = await db
+          .select({ id: files.id })
+          .from(files)
+          .where(
+            and(
+              ne(files.id, id),
+              or(eq(files.id, vanity), eq(files.vanity, vanity))
+            )
+          )
+          .get();
+
+        if (taken) {
+          throw new HTTPException(409, {
+            message: 'This link is already taken'
+          });
+        }
+      }
+
+      const row = await db
+        .update(files)
+        .set({ vanity, private: isPrivate })
+        .where(and(eq(files.id, id), eq(files.userId, c.get('auth').user.id)))
+        .returning()
+        .get();
+
+      if (!row) {
+        throw notFound();
+      }
+
+      const { name } = await openFile(c.env.MASTER_KEY, row);
+
+      return c.json(
+        toFileEntry(
+          row,
+          name,
+          publicOrigin(c.env, c.req.url)
+        ) satisfies FileEntry
+      );
+    }
+  )
   .delete('/:id', requireAuth('session'), async (c) => {
     const db = c.get('db');
     const row = await db

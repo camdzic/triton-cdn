@@ -44,7 +44,7 @@ export const inviteRoutes = new Hono<AppEnv>()
       .get('db')
       .select({
         invite: invites,
-        email: users.email,
+        username: users.username,
         files: accountFiles,
         bytes: accountBytes
       })
@@ -57,9 +57,9 @@ export const inviteRoutes = new Hono<AppEnv>()
       rows.map((row) =>
         toInvite(
           row.invite,
-          row.email === null
+          row.username === null
             ? null
-            : { email: row.email, files: row.files, bytes: row.bytes },
+            : { username: row.username, files: row.files, bytes: row.bytes },
           () => openText(c.env.MASTER_KEY, row.invite.code, row.invite.id)
         )
       )

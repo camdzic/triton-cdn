@@ -11,6 +11,7 @@ import {
   okSchema,
   type RegisterInput,
   sessionSchema,
+  type UpdateFileInput,
   uploadTokenSchema
 } from '@triton/shared';
 import { z } from 'zod';
@@ -127,13 +128,22 @@ export class API {
     );
   }
 
+  updateFile(id: string, input: UpdateFileInput) {
+    return this.json(
+      fileEntrySchema,
+      `/api/files/${encodeURIComponent(id)}`,
+      'PATCH',
+      input
+    );
+  }
+
   deleteFile(id: string) {
     return this.request(okSchema, `/api/files/${encodeURIComponent(id)}`, {
       method: 'DELETE'
     });
   }
 
-  upload(path: string, onProgress: UploadProgress) {
+  upload(path: string, isPrivate: boolean, onProgress: UploadProgress) {
     const file = Bun.file(path);
 
     const total = file.size;
@@ -152,7 +162,7 @@ export class API {
 
     return this.request(
       fileEntrySchema,
-      `/api/files?${new URLSearchParams({ filename: basename(path) })}`,
+      `/api/files?${new URLSearchParams({ filename: basename(path), private: String(isPrivate) })}`,
       {
         method: 'PUT',
         body,
@@ -191,13 +201,7 @@ export class API {
   }
 
   async download(url: string) {
-    let response: Response;
-
-    try {
-      response = await fetch(url);
-    } catch {
-      throw new APIError(`Could not reach ${this.server}`, 0);
-    }
+    const response = await this.send(new URL(url).pathname);
 
     if (!response.ok) {
       throw new APIError(

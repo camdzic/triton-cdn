@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "deploy": "bun --env-file=../../.env scripts/deploy.ts",
+    "predev": "bun scripts/web.ts",
     "dev": "wrangler dev --port 8787 --env-file ../../.env.development --env-file .dev.vars",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",

@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   role: text('role', { enum: ['admin', 'user'] })
     .notNull()
@@ -50,6 +50,8 @@ export const files = sqliteTable(
     contentType: text('content_type').notNull(),
     size: integer('size').notNull(),
     wrappedKey: text('wrapped_key').notNull(),
+    vanity: text('vanity').unique(),
+    private: integer('private', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
   },
   (table) => [index('files_user_created_idx').on(table.userId, table.createdAt)]

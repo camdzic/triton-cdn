@@ -188,4 +188,4 @@ packages/server/wrangler.jsonc
 
 # ShareX configs contain upload tokens
 
-sharex
+/sharex/

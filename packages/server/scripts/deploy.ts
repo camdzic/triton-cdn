@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { buildWeb } from './web';
 
 const SERVER_DIR = join(import.meta.dir, '..');
 
@@ -12,18 +13,26 @@ function domain() {
   return new URL(value).host;
 }
 
-const deploy = Bun.spawn(
-  [
-    process.execPath,
-    'x',
-    'wrangler',
-    'deploy',
-    '--minify',
-    '--domain',
-    domain(),
-    ...process.argv.slice(2)
-  ],
-  { cwd: SERVER_DIR, stdio: ['inherit', 'inherit', 'inherit'] }
-);
+const host = domain();
 
-process.exitCode = await deploy.exited;
+const built = await buildWeb();
+
+if (built === 0) {
+  const deploy = Bun.spawn(
+    [
+      process.execPath,
+      'x',
+      'wrangler',
+      'deploy',
+      '--minify',
+      '--domain',
+      host,
+      ...process.argv.slice(2)
+    ],
+    { cwd: SERVER_DIR, stdio: ['inherit', 'inherit', 'inherit'] }
+  );
+
+  process.exitCode = await deploy.exited;
+} else {
+  process.exitCode = built;
+}

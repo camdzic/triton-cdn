@@ -7,6 +7,7 @@ import { accountRoutes } from './routes/account';
 import { authRoutes } from './routes/auth';
 import { fileRoutes } from './routes/files';
 import { inviteRoutes } from './routes/invites';
+import { pageRoutes } from './routes/pages';
 import { publicRoutes } from './routes/public';
 
 const app = new Hono<AppEnv>()
@@ -19,6 +20,7 @@ const app = new Hono<AppEnv>()
   .route('/api/me', accountRoutes)
   .route('/api/files', fileRoutes)
   .route('/api/invites', inviteRoutes)
+  .route('/', pageRoutes)
   .route('/', publicRoutes);
 
 app.notFound((c) => c.json({ error: 'Not found' } satisfies APIError, 404));

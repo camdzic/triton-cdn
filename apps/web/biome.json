@@ -1,0 +1,52 @@
+{
+  "$schema": "../../node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": "//",
+  "files": {
+    "includes": [
+      "**",
+      "!.next",
+      "!out",
+      "!next-env.d.ts",
+      "!components/ui",
+      "!hooks/use-mobile.ts",
+      "!lib/utils.ts"
+    ]
+  },
+  "css": {
+    "parser": {
+      "cssModules": false,
+      "tailwindDirectives": true
+    }
+  },
+  "linter": {
+    "domains": {
+      "next": "recommended",
+      "react": "recommended"
+    },
+    "rules": {
+      "correctness": {
+        "useExhaustiveDependencies": "error",
+        "useHookAtTopLevel": "error"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "error"
+      },
+      "a11y": {
+        "useButtonType": "error",
+        "useMediaCaption": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["app/layout.tsx"],
+      "linter": {
+        "rules": {
+          "security": {
+            "noDangerouslySetInnerHtml": "off"
+          }
+        }
+      }
+    }
+  ]
+}

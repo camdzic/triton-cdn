@@ -6,6 +6,7 @@ import { files } from '../db/schema';
 import type { AppEnv } from '../env';
 import { toUser } from '../lib/serialize';
 import { uploadTokenFor } from '../lib/upload-token';
+import { isWebClient, setSignedInHint } from '../lib/web-session';
 import { requireAuth } from '../middleware/auth';
 
 export const accountRoutes = new Hono<AppEnv>()
@@ -21,6 +22,10 @@ export const accountRoutes = new Hono<AppEnv>()
         .where(eq(files.userId, user.id))
         .get()
     );
+
+    if (isWebClient(c)) {
+      setSignedInHint(c);
+    }
 
     return c.json({ user: toUser(user), usage } satisfies Account);
   })

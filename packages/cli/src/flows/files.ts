@@ -1,6 +1,13 @@
-import { confirm, log, note, type SelectOptions, select } from '@clack/prompts';
-import type { FileEntry } from '@triton/shared';
-import type { API } from '../lib/api';
+import {
+  confirm,
+  log,
+  note,
+  type SelectOptions,
+  select,
+  text
+} from '@clack/prompts';
+import { type FileEntry, vanitySchema } from '@triton/shared';
+import { type API, APIError } from '../lib/api';
 import {
   fields,
   fileIcon,
@@ -12,15 +19,22 @@ import {
   truncate
 } from '../lib/format';
 import { imageProtocol, type Protocol, renderImage } from '../lib/image';
-import { ask, orBack, task } from '../lib/prompt';
+import { ask, orBack, reportError, task, validator } from '../lib/prompt';
 import { carry, clearScreen, freshScreen, persist } from '../lib/screen';
 import { copyToClipboard, openInBrowser } from '../lib/system';
 import { terminalSize } from '../lib/terminal';
-import { dim, link, red } from '../lib/theme';
+import { dim, link, red, yellow } from '../lib/theme';
 
 const PAGE_SIZE = 15;
 
-type FileAction = 'preview' | 'copy' | 'open' | 'delete' | 'back';
+type FileAction =
+  | 'preview'
+  | 'copy'
+  | 'open'
+  | 'link'
+  | 'access'
+  | 'delete'
+  | 'back';
 
 type BrowseChoice =
   | { kind: 'file'; file: FileEntry }
@@ -35,6 +49,7 @@ function fileCard(file: FileEntry) {
   return note(
     fields([
       ['Link', link(file.url)],
+      ['Access', file.private ? yellow('Private') : 'Public'],
       ['Type', file.contentType],
       ['Size', formatBytes(file.size)],
       [
@@ -115,7 +130,71 @@ export async function deleteFile(api: API, file: FileEntry) {
   return true;
 }
 
-export async function fileFlow(api: API, file: FileEntry) {
+export function setVanity(api: API, file: FileEntry, vanity: string | null) {
+  return task(
+    'Saving link',
+    () => api.updateFile(file.id, { vanity }),
+    (updated) =>
+      vanity === null
+        ? `Custom link removed · ${link(updated.url)}`
+        : `Link saved · ${link(updated.url)}`
+  );
+}
+
+export function setAccess(api: API, file: FileEntry, isPrivate: boolean) {
+  return task(
+    isPrivate ? 'Making it private' : 'Making it public',
+    () => api.updateFile(file.id, { private: isPrivate }),
+    (updated) =>
+      `${updated.name} is now ${updated.private ? 'private' : 'public'}`
+  );
+}
+
+export async function vanityPrompt(file: FileEntry) {
+  const answer = ask(
+    await text({
+      message:
+        file.vanity === null
+          ? `Custom link ${dim('· leave empty to go back')}`
+          : `Custom link ${dim('· clear it to remove')}`,
+      placeholder: 'my-file',
+      initialValue: file.vanity === null ? undefined : file.vanity,
+      defaultValue: '',
+      validate: (value) =>
+        value === undefined || value === ''
+          ? undefined
+          : validator(vanitySchema)(value)
+    })
+  );
+
+  const vanity = answer.trim();
+
+  return vanity === '' ? null : vanity;
+}
+
+async function changeVanity(api: API, file: FileEntry) {
+  const vanity = await vanityPrompt(file);
+
+  if (vanity === file.vanity) {
+    return file;
+  }
+
+  try {
+    return await setVanity(api, file, vanity);
+  } catch (error) {
+    if (error instanceof APIError && error.status === 409) {
+      persist(() => reportError(error));
+
+      return file;
+    }
+
+    throw error;
+  }
+}
+
+export async function fileFlow(api: API, selected: FileEntry) {
+  let file = selected;
+
   const protocol = await previewProtocol(file);
 
   let image: Promise<Uint8Array> | undefined;
@@ -139,6 +218,15 @@ export async function fileFlow(api: API, file: FileEntry) {
             : []),
           { value: 'copy', label: 'Copy link' },
           { value: 'open', label: 'Open in browser' },
+          {
+            value: 'link',
+            label:
+              file.vanity === null ? 'Set custom link' : 'Change custom link'
+          },
+          {
+            value: 'access',
+            label: file.private ? 'Make public' : 'Make private'
+          },
           { value: 'delete', label: red('Delete') },
           { value: 'back', label: dim('Back') }
         ]
@@ -162,6 +250,19 @@ export async function fileFlow(api: API, file: FileEntry) {
         break;
       case 'open':
         openInBrowser(file.url);
+
+        if (file.private) {
+          persist(() =>
+            log.info('Private files open in a browser signed in to triton')
+          );
+        }
+
+        break;
+      case 'link':
+        file = await changeVanity(api, file);
+        break;
+      case 'access':
+        file = await setAccess(api, file, !file.private);
         break;
       case 'delete':
         if (await deleteFile(api, file)) {
@@ -180,7 +281,8 @@ function fileLabel(file: FileEntry, nameWidth: number) {
     fileIcon(file),
     padEnd(truncate(file.name, nameWidth), nameWidth),
     dim(formatBytes(file.size).padStart(8)),
-    dim(formatRelative(file.createdAt))
+    dim(formatRelative(file.createdAt)),
+    file.private ? yellow('private') : ''
   ].join('  ');
 }
 
