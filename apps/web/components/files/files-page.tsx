@@ -259,10 +259,9 @@ export function FilesPage() {
         <EmptyFiles />
       ) : (
         <>
-          <div className="text-muted-foreground mb-3 flex items-center justify-between text-sm">
-            <span>{plural(page.data.total, 'file')}</span>
-            {page.isFetching ? <span>Refreshing…</span> : null}
-          </div>
+          <p className="text-muted-foreground mb-3 text-sm">
+            {plural(page.data.total, 'file')}
+          </p>
           {view === 'grid' ? (
             <FileGrid files={page.data.files} onIntent={intend} />
           ) : (
