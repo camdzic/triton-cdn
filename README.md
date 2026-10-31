@@ -6,7 +6,7 @@ Self-hosted encrypted CDN on Cloudflare Workers, R2 and D1, managed from a termi
 - Uploads stream through the Worker in 256 KiB sealed chunks, so large files never sit in memory and range requests (video seeking) work.
 - Invite-only accounts. Every account has one built-in upload-only token for ShareX, derived from the master key, so there is nothing to create or manage.
 - A web dashboard (Next.js static export) served by the same Worker: files, uploads with drag and drop, invites, ShareX configs, light and dark mode, works on phones.
-- Optional per-account link embeds for Discord and other apps: color, site name, author, title and description with `{filename}`, `{size}`, `{date}`, `{time}` and `{username}`, for public images and videos.
+- Optional per-account link embeds for Discord and other apps: color, site name, author, title and description with `{filename}`, `{size}`, `{date}`, `{time}` and `{username}`, for public images.
 - Real image previews in terminals that support them (Windows Terminal 1.22+ via Sixel, kitty, Ghostty, iTerm2, WezTerm, mintty). Other terminals just show file info.
 
 ```

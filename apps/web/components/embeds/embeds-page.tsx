@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  DEFAULT_EMBED,
   DEFAULT_EMBED_COLOR,
   EMBED_VARIABLES,
   type EmbedSettings,
@@ -9,7 +10,7 @@ import {
   fillEmbedText
 } from '@triton/shared';
 import { RefreshCwIcon } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, type ReactNode, useState } from 'react';
 import { useCurrentAccount } from '@/components/account-context';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -124,9 +125,31 @@ function EmbedPreview({ form }: { form: EmbedSettings }) {
   );
 }
 
-function EmbedForm({ settings }: { settings: EmbedSettings }) {
+function Masked({
+  loading,
+  children
+}: {
+  loading: boolean;
+  children: ReactNode;
+}) {
+  if (!loading) {
+    return children;
+  }
+
+  return (
+    <div className="relative">
+      <Skeleton className="absolute inset-0" />
+      <div className="invisible grid">{children}</div>
+    </div>
+  );
+}
+
+function EmbedForm({ settings }: { settings: EmbedSettings | undefined }) {
   const save = useSaveEmbed();
-  const [form, setForm] = useState(settings);
+  const loading = settings === undefined;
+  const [form, setForm] = useState(
+    settings === undefined ? DEFAULT_EMBED : settings
+  );
   const [failure, setFailure] = useState<string | null>(null);
 
   function change<Key extends keyof EmbedSettings>(
@@ -169,56 +192,61 @@ function EmbedForm({ settings }: { settings: EmbedSettings }) {
         <CardHeader>
           <CardTitle>Link embed</CardTitle>
           <CardDescription>
-            Applies to your public images and videos. Private files never get an
-            embed.
+            Applies to your public images. Private files never get an embed.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} noValidate className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
               <FieldLabel htmlFor="embed-enabled">Enable embeds</FieldLabel>
-              <Switch
-                id="embed-enabled"
-                checked={form.enabled}
-                onCheckedChange={(checked) => change('enabled', checked)}
-              />
+              <Masked loading={loading}>
+                <Switch
+                  id="embed-enabled"
+                  checked={form.enabled}
+                  onCheckedChange={(checked) => change('enabled', checked)}
+                />
+              </Masked>
             </div>
             <Field>
               <FieldLabel htmlFor="embed-color">Color</FieldLabel>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  aria-label="Pick a color"
-                  value={
-                    COLOR_PATTERN.test(form.color)
-                      ? form.color.toLowerCase()
-                      : DEFAULT_EMBED_COLOR
-                  }
-                  onChange={(event) => change('color', event.target.value)}
-                  className="border-input size-9 shrink-0 cursor-pointer rounded-lg border bg-transparent p-1"
-                />
-                <Input
-                  id="embed-color"
-                  value={form.color}
-                  maxLength={7}
-                  spellCheck={false}
-                  autoComplete="off"
-                  className="font-mono"
-                  onChange={(event) => change('color', event.target.value)}
-                />
-              </div>
+              <Masked loading={loading}>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    aria-label="Pick a color"
+                    value={
+                      COLOR_PATTERN.test(form.color)
+                        ? form.color.toLowerCase()
+                        : DEFAULT_EMBED_COLOR
+                    }
+                    onChange={(event) => change('color', event.target.value)}
+                    className="border-input size-9 shrink-0 cursor-pointer rounded-lg border bg-transparent p-1"
+                  />
+                  <Input
+                    id="embed-color"
+                    value={form.color}
+                    maxLength={7}
+                    spellCheck={false}
+                    autoComplete="off"
+                    className="font-mono"
+                    onChange={(event) => change('color', event.target.value)}
+                  />
+                </div>
+              </Masked>
             </Field>
             {TEXT_FIELDS.map(({ key, label, placeholder, max, hint }) => (
               <Field key={key}>
                 <FieldLabel htmlFor={`embed-${key}`}>{label}</FieldLabel>
-                <Input
-                  id={`embed-${key}`}
-                  value={form[key]}
-                  maxLength={max}
-                  placeholder={placeholder}
-                  autoComplete="off"
-                  onChange={(event) => change(key, event.target.value)}
-                />
+                <Masked loading={loading}>
+                  <Input
+                    id={`embed-${key}`}
+                    value={form[key]}
+                    maxLength={max}
+                    placeholder={placeholder}
+                    autoComplete="off"
+                    onChange={(event) => change(key, event.target.value)}
+                  />
+                </Masked>
                 {hint === null ? null : (
                   <FieldDescription>{hint}</FieldDescription>
                 )}
@@ -226,13 +254,17 @@ function EmbedForm({ settings }: { settings: EmbedSettings }) {
             ))}
             <Field>
               <FieldLabel htmlFor="embed-description">Description</FieldLabel>
-              <Textarea
-                id="embed-description"
-                value={form.description}
-                maxLength={350}
-                rows={3}
-                onChange={(event) => change('description', event.target.value)}
-              />
+              <Masked loading={loading}>
+                <Textarea
+                  id="embed-description"
+                  value={form.description}
+                  maxLength={350}
+                  rows={3}
+                  onChange={(event) =>
+                    change('description', event.target.value)
+                  }
+                />
+              </Masked>
               <FieldDescription className="flex flex-wrap items-center gap-1">
                 Variables:
                 {EMBED_VARIABLES.map((variable) => (
@@ -245,7 +277,7 @@ function EmbedForm({ settings }: { settings: EmbedSettings }) {
               type="submit"
               size="lg"
               className="w-full"
-              disabled={save.isPending}
+              disabled={loading || save.isPending}
             >
               {save.isPending ? <Spinner /> : null}
               Save embed
@@ -253,47 +285,17 @@ function EmbedForm({ settings }: { settings: EmbedSettings }) {
           </form>
         </CardContent>
       </Card>
-      <Card className="lg:sticky lg:top-20 lg:col-span-2">
+      <Card className="lg:sticky lg:top-20 lg:col-span-2 lg:max-h-[calc(100svh-6rem)] lg:overflow-y-auto">
         <CardHeader>
           <CardTitle>Preview</CardTitle>
           <CardDescription>Roughly how it looks on Discord.</CardDescription>
         </CardHeader>
         <CardContent>
-          <EmbedPreview form={form} />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function EmbedSkeleton() {
-  return (
-    <div className="grid items-start gap-4 *:min-w-0 lg:grid-cols-5 lg:gap-6">
-      <Card className="lg:col-span-3">
-        <CardHeader>
-          <CardTitle>Link embed</CardTitle>
-          <CardDescription>
-            Applies to your public images and videos. Private files never get an
-            embed.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <Skeleton className="h-[1.2rem] w-full" />
-          <Skeleton className="h-[3.95rem] w-full" />
-          <Skeleton className="h-22 w-full" />
-          <Skeleton className="h-22 w-full" />
-          <Skeleton className="h-[3.7rem] w-full" />
-          <Skeleton className="h-30 w-full" />
-          <Skeleton className="h-9 w-full" />
-        </CardContent>
-      </Card>
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Preview</CardTitle>
-          <CardDescription>Roughly how it looks on Discord.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="aspect-video w-full" />
+          {loading ? (
+            <Skeleton className="aspect-video w-full" />
+          ) : (
+            <EmbedPreview form={form} />
+          )}
         </CardContent>
       </Card>
     </div>
@@ -309,9 +311,7 @@ export function EmbedsPage() {
         title="Embeds"
         description="Choose how your links look when shared on Discord and other apps."
       />
-      {embed.isPending ? (
-        <EmbedSkeleton />
-      ) : embed.isError ? (
+      {embed.isError ? (
         <Empty className="border border-dashed">
           <EmptyHeader>
             <EmptyTitle>Could not load your embed</EmptyTitle>
@@ -325,7 +325,10 @@ export function EmbedsPage() {
           </EmptyContent>
         </Empty>
       ) : (
-        <EmbedForm settings={embed.data} />
+        <EmbedForm
+          key={embed.data === undefined ? 'loading' : 'ready'}
+          settings={embed.data}
+        />
       )}
     </>
   );

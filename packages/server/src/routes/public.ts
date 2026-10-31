@@ -63,7 +63,6 @@ export const publicRoutes = new Hono<AppEnv>().get(FILE_ROUTE, async (c) => {
       return c.html(
         embedPage(
           embed,
-          row.contentType,
           fileUrl(origin, slug, embed.name),
           `${origin}/api/oembed?${new URLSearchParams({ file: slug })}`
         ),

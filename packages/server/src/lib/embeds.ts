@@ -17,16 +17,8 @@ import { openFile } from './stored-files';
 
 const CRAWLER_PATTERN =
   /discordbot|twitterbot|telegrambot|slackbot|whatsapp|facebookexternalhit/i;
-const VIDEO_TYPES = new Set(['video/mp4', 'video/webm']);
-const VIDEO_WIDTH = '1280';
-const VIDEO_HEIGHT = '720';
 
-type EmbedKind = 'image' | 'video';
-
-export type Embed = Omit<EmbedSettings, 'enabled'> & {
-  kind: EmbedKind;
-  name: string;
-};
+export type Embed = Omit<EmbedSettings, 'enabled'> & { name: string };
 
 function toSettings(row: EmbedSettingsRow) {
   return {
@@ -39,14 +31,12 @@ function toSettings(row: EmbedSettingsRow) {
   };
 }
 
-function embedKind(contentType: string): EmbedKind | null {
-  if (VIDEO_TYPES.has(contentType)) {
-    return 'video';
-  }
-
-  return contentType.startsWith('image/') && contentType !== 'image/svg+xml'
-    ? 'image'
-    : null;
+function isEmbeddable(row: FileRow) {
+  return (
+    !row.private &&
+    row.contentType.startsWith('image/') &&
+    row.contentType !== 'image/svg+xml'
+  );
 }
 
 export function isEmbedCrawler(agent: string | undefined) {
@@ -83,9 +73,7 @@ export async function loadEmbed(
   secret: string,
   row: FileRow
 ): Promise<Embed | null> {
-  const kind = embedKind(row.contentType);
-
-  if (row.private || kind === null) {
+  if (!isEmbeddable(row)) {
     return null;
   }
 
@@ -105,7 +93,6 @@ export async function loadEmbed(
   const values = embedValues({ ...row, name }, username);
 
   return {
-    kind,
     name,
     color: settings.color,
     siteName: fillEmbedText(settings.siteName, values),
@@ -127,33 +114,7 @@ function named(name: string, content: string) {
     : html`<meta name="${name}" content="${content}" />`;
 }
 
-function imageTags(url: string) {
-  return html`
-    ${property('og:image', url)} ${named('twitter:card', 'summary_large_image')}
-    ${named('twitter:image', url)}
-  `;
-}
-
-function videoTags(url: string, contentType: string) {
-  return html`
-    ${property('og:type', 'video.other')} ${property('og:video', url)}
-    ${property('og:video:url', url)} ${property('og:video:secure_url', url)}
-    ${property('og:video:type', contentType)}
-    ${property('og:video:width', VIDEO_WIDTH)}
-    ${property('og:video:height', VIDEO_HEIGHT)} ${named('twitter:card', 'player')}
-    ${named('twitter:player:stream', url)}
-    ${named('twitter:player:stream:content_type', contentType)}
-    ${named('twitter:player:width', VIDEO_WIDTH)}
-    ${named('twitter:player:height', VIDEO_HEIGHT)}
-  `;
-}
-
-export function embedPage(
-  embed: Embed,
-  contentType: string,
-  url: string,
-  oEmbedUrl: string
-) {
+export function embedPage(embed: Embed, url: string, oEmbedUrl: string) {
   const raw = `${url}?raw=1`;
   const hasOEmbed = embed.author !== '' || embed.siteName !== '';
 
@@ -167,7 +128,9 @@ export function embedPage(
         ${property('og:title', embed.title)}
         ${property('og:description', embed.description)}
         ${property('og:url', url)}
-        ${embed.kind === 'video' ? videoTags(raw, contentType) : imageTags(raw)}
+        ${property('og:image', raw)}
+        ${named('twitter:card', 'summary_large_image')}
+        ${named('twitter:image', raw)}
         ${
           hasOEmbed
             ? html`<link
