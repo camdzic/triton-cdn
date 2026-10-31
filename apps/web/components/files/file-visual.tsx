@@ -37,6 +37,9 @@ const KIND_TONES: Record<FileKind, string> = {
   other: 'bg-muted text-muted-foreground'
 };
 
+const POSTER_WIDTH = 640;
+const posters = new Map<string, string>();
+
 export function filePath(file: FileEntry) {
   return new URL(file.url).pathname;
 }
@@ -94,6 +97,72 @@ function Placeholder({ file }: { file: FileEntry }) {
   );
 }
 
+function capturePoster(video: HTMLVideoElement) {
+  const scale = Math.min(1, POSTER_WIDTH / video.videoWidth);
+  const canvas = document.createElement('canvas');
+
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+
+  const context = canvas.getContext('2d');
+
+  if (context === null) {
+    return null;
+  }
+
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  return canvas.toDataURL('image/jpeg', 0.8);
+}
+
+function VideoThumbnail({ file }: { file: FileEntry }) {
+  const [poster, setPoster] = useState(posters.get(file.id));
+
+  function capture(video: HTMLVideoElement) {
+    if (video.seeking || video.videoWidth === 0) {
+      return;
+    }
+
+    const captured = capturePoster(video);
+
+    if (captured !== null) {
+      posters.set(file.id, captured);
+      setPoster(captured);
+    }
+  }
+
+  if (poster !== undefined) {
+    return (
+      <div className="relative size-full">
+        <Image
+          draggable={false}
+          src={poster}
+          alt={file.name}
+          fill
+          unoptimized
+          loading="eager"
+          className="object-cover"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative size-full">
+      <Placeholder file={file} />
+      <video
+        src={`${filePath(file)}#t=0.1`}
+        preload="metadata"
+        muted
+        playsInline
+        className="absolute inset-0 size-full opacity-0"
+        onLoadedData={(event) => capture(event.currentTarget)}
+        onSeeked={(event) => capture(event.currentTarget)}
+      />
+    </div>
+  );
+}
+
 export function FileThumbnail({ file }: { file: FileEntry }) {
   const [broken, setBroken] = useState(false);
   const kind = fileKind(file);
@@ -119,17 +188,7 @@ export function FileThumbnail({ file }: { file: FileEntry }) {
   }
 
   if (kind === 'video') {
-    return (
-      <video
-        draggable={false}
-        src={`${filePath(file)}#t=0.1`}
-        preload="metadata"
-        muted
-        playsInline
-        className="size-full bg-black object-cover"
-        onError={() => setBroken(true)}
-      />
-    );
+    return <VideoThumbnail file={file} />;
   }
 
   return <Placeholder file={file} />;
