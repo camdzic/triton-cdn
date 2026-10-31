@@ -18,15 +18,22 @@ export const EMBED_VARIABLES = [
   'filename',
   'size',
   'date',
+  'time',
   'username'
 ] as const;
 export const DEFAULT_EMBED_COLOR = '#a78bfa';
 
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
 const EMBED_COLOR_PATTERN = /^#[0-9a-f]{6}$/;
-const EMBED_VARIABLE_PATTERN = /\{(?:filename|size|date|username)\}/g;
+const EMBED_VARIABLE_PATTERN = /\{(?:filename|size|date|time|username)\}/g;
 const EMBED_DAY_FORMAT = new Intl.DateTimeFormat('en', {
   dateStyle: 'medium',
+  timeZone: 'UTC'
+});
+const EMBED_TIME_FORMAT = new Intl.DateTimeFormat('en', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
   timeZone: 'UTC'
 });
 
@@ -291,6 +298,7 @@ export function embedValues(
     filename: file.name,
     size: formatBytes(file.size),
     date: EMBED_DAY_FORMAT.format(file.createdAt),
+    time: `${EMBED_TIME_FORMAT.format(file.createdAt)} UTC`,
     username
   };
 }
