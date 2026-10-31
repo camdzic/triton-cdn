@@ -7,6 +7,7 @@ import { accountRoutes } from './routes/account';
 import { authRoutes } from './routes/auth';
 import { fileRoutes } from './routes/files';
 import { inviteRoutes } from './routes/invites';
+import { oEmbedRoutes } from './routes/oembed';
 import { pageRoutes } from './routes/pages';
 import { publicRoutes } from './routes/public';
 
@@ -20,6 +21,7 @@ const app = new Hono<AppEnv>()
   .route('/api/me', accountRoutes)
   .route('/api/files', fileRoutes)
   .route('/api/invites', inviteRoutes)
+  .route('/api/oembed', oEmbedRoutes)
   .route('/', pageRoutes)
   .route('/', publicRoutes);
 

@@ -5,9 +5,30 @@ export const UPLOAD_TOKEN_PREFIX = 'tru_';
 export const SESSION_COOKIE = 'triton_session';
 export const SIGNED_IN_COOKIE = 'triton_signed_in';
 export const GUEST_PATHS = ['/login', '/register'] as const;
-export const MEMBER_PATHS = ['/', '/invites', '/sharex', '/account'] as const;
+export const MEMBER_PATHS = [
+  '/',
+  '/invites',
+  '/sharex',
+  '/embeds',
+  '/account'
+] as const;
 export const WEB_CLIENT_HEADER = 'x-triton-client';
 export const WEB_CLIENT = 'web';
+export const EMBED_VARIABLES = [
+  'filename',
+  'size',
+  'date',
+  'username'
+] as const;
+export const DEFAULT_EMBED_COLOR = '#a78bfa';
+
+const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
+const EMBED_COLOR_PATTERN = /^#[0-9a-f]{6}$/;
+const EMBED_VARIABLE_PATTERN = /\{(?:filename|size|date|username)\}/g;
+const EMBED_DAY_FORMAT = new Intl.DateTimeFormat('en', {
+  dateStyle: 'medium',
+  timeZone: 'UTC'
+});
 
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/;
 
@@ -107,6 +128,33 @@ export const updateFileInputSchema = z
     'Nothing to update'
   );
 
+function embedText(label: string, max: number) {
+  return z
+    .string()
+    .trim()
+    .max(max, `${label} must be at most ${max} characters`);
+}
+
+export const embedSettingsSchema = z.object({
+  enabled: z.boolean(),
+  color: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(EMBED_COLOR_PATTERN, 'Use a hex color like #a78bfa'),
+  siteName: embedText('Site name', 100),
+  author: embedText('Author', 100),
+  title: embedText('Title', 200),
+  description: embedText('Description', 350)
+});
+
+export const oEmbedSchema = z.object({
+  version: z.literal('1.0'),
+  type: z.literal('link'),
+  author_name: z.string().optional(),
+  provider_name: z.string().optional()
+});
+
 export const userSchema = z.object({
   id: z.string(),
   username: z.string(),
@@ -195,6 +243,9 @@ export type RegisterInput = z.input<typeof registerInputSchema>;
 export type LoginInput = z.input<typeof loginInputSchema>;
 export type CreateInviteInput = z.input<typeof createInviteInputSchema>;
 export type UpdateFileInput = z.input<typeof updateFileInputSchema>;
+export type EmbedSettings = z.infer<typeof embedSettingsSchema>;
+export type EmbedVariable = (typeof EMBED_VARIABLES)[number];
+export type OEmbed = z.infer<typeof oEmbedSchema>;
 export type User = z.infer<typeof userSchema>;
 export type Role = User['role'];
 export type Session = z.infer<typeof sessionSchema>;
@@ -208,3 +259,48 @@ export type Invite = z.infer<typeof inviteSchema>;
 export type CreatedInvite = z.infer<typeof createdInviteSchema>;
 export type Ok = z.infer<typeof okSchema>;
 export type APIError = z.infer<typeof apiErrorSchema>;
+
+export const DEFAULT_EMBED: EmbedSettings = {
+  enabled: false,
+  color: DEFAULT_EMBED_COLOR,
+  siteName: '',
+  author: '',
+  title: '{filename}',
+  description: ''
+};
+
+export function formatBytes(bytes: number) {
+  let value = bytes;
+  let unit = 0;
+
+  while (value >= 1000 && unit < BYTE_UNITS.length - 1) {
+    value /= 1000;
+    unit += 1;
+  }
+
+  const digits = unit === 0 || value >= 100 ? 0 : 1;
+
+  return `${value.toFixed(digits)} ${BYTE_UNITS[unit]}`;
+}
+
+export function embedValues(
+  file: { name: string; size: number; createdAt: Date },
+  username: string
+): Record<EmbedVariable, string> {
+  return {
+    filename: file.name,
+    size: formatBytes(file.size),
+    date: EMBED_DAY_FORMAT.format(file.createdAt),
+    username
+  };
+}
+
+export function fillEmbedText(
+  template: string,
+  values: Record<EmbedVariable, string>
+) {
+  return template.replace(
+    EMBED_VARIABLE_PATTERN,
+    (match) => values[match.slice(1, -1) as EmbedVariable]
+  );
+}

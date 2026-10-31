@@ -6,6 +6,7 @@ Self-hosted encrypted CDN on Cloudflare Workers, R2 and D1, managed from a termi
 - Uploads stream through the Worker in 256 KiB sealed chunks, so large files never sit in memory and range requests (video seeking) work.
 - Invite-only accounts. Every account has one built-in upload-only token for ShareX, derived from the master key, so there is nothing to create or manage.
 - A web dashboard (Next.js static export) served by the same Worker: files, uploads with drag and drop, invites, ShareX configs, light and dark mode, works on phones.
+- Optional per-account link embeds for Discord and other apps: color, site name, author, title and description with `{filename}`, `{size}`, `{date}` and `{username}`, for public images and videos.
 - Real image previews in terminals that support them (Windows Terminal 1.22+ via Sixel, kitty, Ghostty, iTerm2, WezTerm, mintty). Other terminals just show file info.
 
 ```
@@ -154,8 +155,10 @@ bun run dev:web
 | `GET` | `/api/files?limit=&offset=` | session |
 | `GET` `PATCH` `DELETE` | `/api/files/:id` | session |
 | `GET` | `/api/me/upload-token` | session |
+| `GET` `PUT` | `/api/me/embed` | session |
+| `GET` | `/api/oembed?file=` | public, embed-enabled files only |
 | `GET` `POST` | `/api/invites` | admin |
 | `DELETE` | `/api/invites/:id` | admin |
-| `GET` | `/:id(.ext)` or `/:vanity(.ext)` | public, or owner for private files, supports `Range` |
+| `GET` | `/:id(.ext)` or `/:vanity(.ext)` | public, or owner for private files, supports `Range`; `?raw=1` skips the embed page |
 
 Session endpoints accept `Authorization: Bearer trs_...` (CLI) or the session cookie together with `X-Triton-Client: web` (dashboard).

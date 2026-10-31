@@ -1,6 +1,7 @@
 import type { FileEntry } from '@triton/shared';
 
-const UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
+export { formatBytes } from '@triton/shared';
+
 const RELATIVE_STEPS: ReadonlyArray<
   readonly [number, Intl.RelativeTimeFormatUnit]
 > = [
@@ -21,20 +22,6 @@ const dateFormat = new Intl.DateTimeFormat('en', {
   timeStyle: 'short'
 });
 const dayFormat = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
-
-export function formatBytes(bytes: number) {
-  let value = bytes;
-  let unit = 0;
-
-  while (value >= 1000 && unit < UNITS.length - 1) {
-    value /= 1000;
-    unit += 1;
-  }
-
-  const digits = unit === 0 || value >= 100 ? 0 : 1;
-
-  return `${value.toFixed(digits)} ${UNITS[unit]}`;
-}
 
 export function formatRelative(iso: string, now: number) {
   let value = (new Date(iso).getTime() - now) / 1000;

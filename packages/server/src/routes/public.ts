@@ -1,11 +1,11 @@
-import { eq, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { files } from '../db/schema';
 import type { AppEnv } from '../env';
 import { contentDisposition, servedContentType } from '../lib/content-type';
+import { embedPage, isEmbedCrawler, loadEmbed } from '../lib/embeds';
 import { parseRange } from '../lib/range';
-import { objectKey, openFile } from '../lib/stored-files';
+import { fileSlug, fileUrl, publicOrigin } from '../lib/serialize';
+import { findBySlug, objectKey, openFile } from '../lib/stored-files';
 import { sealedSlice } from '../lib/stream-cipher';
 import { viewerId } from '../middleware/auth';
 
@@ -18,7 +18,15 @@ const FILE_HEADERS = {
   'Referrer-Policy': 'no-referrer',
   'Cross-Origin-Resource-Policy': 'cross-origin',
   'Accept-Ranges': 'bytes',
-  'Cache-Control': 'public, max-age=86400'
+  'Cache-Control': 'public, max-age=86400',
+  Vary: 'User-Agent'
+};
+
+const EMBED_HEADERS = {
+  'Content-Security-Policy': "default-src 'none'; sandbox",
+  'X-Content-Type-Options': 'nosniff',
+  'Cache-Control': 'no-store',
+  Vary: 'User-Agent'
 };
 
 const PRIVATE_HEADERS = {
@@ -31,14 +39,8 @@ function notFound() {
 }
 
 export const publicRoutes = new Hono<AppEnv>().get(FILE_ROUTE, async (c) => {
-  const [slug = ''] = c.req.param('slug').split('.');
-
-  const row = await c
-    .get('db')
-    .select()
-    .from(files)
-    .where(or(eq(files.id, slug), eq(files.vanity, slug.toLowerCase())))
-    .get();
+  const db = c.get('db');
+  const row = await findBySlug(db, c.req.param('slug'));
 
   if (!row) {
     throw notFound();
@@ -46,6 +48,29 @@ export const publicRoutes = new Hono<AppEnv>().get(FILE_ROUTE, async (c) => {
 
   if (row.private && (await viewerId(c)) !== row.userId) {
     throw notFound();
+  }
+
+  if (
+    c.req.query('raw') === undefined &&
+    isEmbedCrawler(c.req.header('user-agent'))
+  ) {
+    const embed = await loadEmbed(db, c.env.MASTER_KEY, row);
+
+    if (embed !== null) {
+      const origin = publicOrigin(c.env, c.req.url);
+      const slug = fileSlug(row);
+
+      return c.html(
+        embedPage(
+          embed,
+          row.contentType,
+          fileUrl(origin, slug, embed.name),
+          `${origin}/api/oembed?${new URLSearchParams({ file: slug })}`
+        ),
+        200,
+        EMBED_HEADERS
+      );
+    }
   }
 
   const etag = `"${row.id}"`;

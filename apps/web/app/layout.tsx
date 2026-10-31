@@ -14,20 +14,20 @@ const geistMono = Geist_Mono({
   subsets: ['latin']
 });
 
+const DESCRIPTION = 'Self-hosted encrypted CDN';
+
 export const metadata: Metadata = {
   title: {
     default: 'triton',
     template: '%s · triton'
   },
-  description: 'Self-hosted encrypted CDN',
+  description: DESCRIPTION,
+  openGraph: { title: 'Home · triton', description: DESCRIPTION },
   robots: { index: false, follow: false }
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fcfcfd' },
-    { media: '(prefers-color-scheme: dark)', color: '#0e0d12' }
-  ]
+  themeColor: '#a78bfa'
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

@@ -11,19 +11,15 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { aggregateRow } from '../db/aggregates';
 import { files } from '../db/schema';
-import type { AppEnv, Bindings } from '../env';
+import type { AppEnv } from '../env';
 import { resolveContentType } from '../lib/content-type';
 import { createFileKey, encryptName } from '../lib/envelope';
 import { randomId } from '../lib/random';
-import { toFileEntry } from '../lib/serialize';
+import { publicOrigin, toFileEntry } from '../lib/serialize';
 import { objectKey, openFile, removeFile } from '../lib/stored-files';
 import { encryptStream, sealedSize } from '../lib/stream-cipher';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-
-function publicOrigin(env: Bindings, url: string) {
-  return env.TRITON_URL === undefined ? new URL(url).origin : env.TRITON_URL;
-}
 
 function notFound() {
   return new HTTPException(404, { message: 'File not found' });

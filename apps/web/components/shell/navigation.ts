@@ -1,6 +1,7 @@
 import {
   FolderIcon,
   type LucideIcon,
+  PaletteIcon,
   TicketIcon,
   UserIcon,
   WandSparklesIcon
@@ -23,6 +24,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: WandSparklesIcon,
     adminOnly: false
   },
+  { href: '/embeds', label: 'Embeds', icon: PaletteIcon, adminOnly: false },
   { href: '/account', label: 'Account', icon: UserIcon, adminOnly: false }
 ];
 

@@ -17,6 +17,7 @@
       "/register",
       "/invites",
       "/sharex",
+      "/embeds",
       "/account"
     ]
   },

@@ -57,6 +57,19 @@ export const files = sqliteTable(
   (table) => [index('files_user_created_idx').on(table.userId, table.createdAt)]
 );
 
+export const embedSettings = sqliteTable('embed_settings', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull(),
+  color: text('color').notNull(),
+  siteName: text('site_name').notNull(),
+  author: text('author').notNull(),
+  title: text('title').notNull(),
+  description: text('description').notNull()
+});
+
 export type UserRow = typeof users.$inferSelect;
 export type InviteRow = typeof invites.$inferSelect;
 export type FileRow = typeof files.$inferSelect;
+export type EmbedSettingsRow = typeof embedSettings.$inferSelect;

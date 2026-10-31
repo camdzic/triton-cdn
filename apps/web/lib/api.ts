@@ -3,6 +3,8 @@ import {
   apiErrorSchema,
   type CreateInviteInput,
   createdInviteSchema,
+  type EmbedSettings,
+  embedSettingsSchema,
   type FileEntry,
   fileEntrySchema,
   filePageSchema,
@@ -158,6 +160,12 @@ export const api = {
   },
   uploadToken() {
     return request(uploadTokenSchema, '/api/me/upload-token');
+  },
+  embed() {
+    return request(embedSettingsSchema, '/api/me/embed');
+  },
+  saveEmbed(input: EmbedSettings) {
+    return json(embedSettingsSchema, '/api/me/embed', 'PUT', input);
   },
   files(limit: number, offset: number) {
     return request(

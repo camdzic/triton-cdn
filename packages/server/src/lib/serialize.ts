@@ -1,5 +1,6 @@
 import type { Invite, InviteAccount } from '@triton/shared';
 import type { FileRow, InviteRow, UserRow } from '../db/schema';
+import type { Bindings } from '../env';
 
 const EXTENSION_PATTERN = /\.[A-Za-z0-9]{1,16}$/;
 
@@ -7,6 +8,14 @@ function extensionOf(name: string) {
   const match = EXTENSION_PATTERN.exec(name);
 
   return match ? match[0].toLowerCase() : '';
+}
+
+export function publicOrigin(env: Bindings, url: string) {
+  return env.TRITON_URL === undefined ? new URL(url).origin : env.TRITON_URL;
+}
+
+export function fileSlug(row: FileRow) {
+  return row.vanity === null ? row.id : row.vanity;
 }
 
 export function fileUrl(base: string, slug: string, name: string) {
@@ -65,7 +74,7 @@ export function toFileEntry(row: FileRow, name: string, base: string) {
     name,
     contentType: row.contentType,
     size: row.size,
-    url: fileUrl(base, row.vanity === null ? row.id : row.vanity, name),
+    url: fileUrl(base, fileSlug(row), name),
     vanity: row.vanity,
     private: row.private,
     createdAt: row.createdAt.toISOString()

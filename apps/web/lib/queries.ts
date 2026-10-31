@@ -10,7 +10,8 @@ export const queryKeys = {
   account: ['account'],
   files: ['files'],
   filePage: (offset: number) => ['files', offset],
-  invites: ['invites']
+  invites: ['invites'],
+  embed: ['embed']
 } as const;
 
 export function useAccount() {
@@ -48,6 +49,25 @@ export function useUpdateFile() {
                 )
               }
       );
+    }
+  });
+}
+
+export function useEmbed() {
+  return useQuery({
+    queryKey: queryKeys.embed,
+    queryFn: api.embed,
+    staleTime: 30_000
+  });
+}
+
+export function useSaveEmbed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: api.saveEmbed,
+    onSuccess(saved) {
+      queryClient.setQueryData(queryKeys.embed, saved);
     }
   });
 }
